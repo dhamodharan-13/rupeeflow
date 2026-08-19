@@ -1,0 +1,6 @@
+{
+  "name": "Finance Tracker",
+  "description": "Multi-bucket money saving & spending tracker with UPI, Wallet, Treasure Safe, Stocks, and Custody Ledger",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
