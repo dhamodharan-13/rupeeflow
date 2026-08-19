@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,20 +16,19 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.AccountBalance
-import androidx.compose.material.icons.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Wallet
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -36,7 +36,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ElevatedCard
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,7 +52,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,6 +62,10 @@ import com.example.data.model.TransactionEntity
 import com.example.data.model.TransactionType
 import com.example.ui.components.AddTransactionDialog
 import com.example.ui.components.HistoryFilterDialog
+import com.example.ui.theme.AppleBlue
+import com.example.ui.theme.AppleGreen
+import com.example.ui.theme.AppleOrange
+import com.example.ui.theme.AppleRed
 import com.example.ui.viewmodel.FinanceUiState
 import com.example.ui.viewmodel.FinanceViewModel
 import java.text.SimpleDateFormat
@@ -73,11 +76,13 @@ import java.util.Locale
 fun DashboardScreen(
     uiState: FinanceUiState,
     viewModel: FinanceViewModel,
+    onNavigateToWealth: () -> Unit,
     onNavigateToCustody: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showAddDialog by remember { mutableStateOf(false) }
     var showFilterDialog by remember { mutableStateOf(false) }
+    var isBalanceHidden by remember { mutableStateOf(true) }
     var dialogInitialType by remember { mutableStateOf(TransactionType.EXPENSE) }
     var dialogInitialMethod by remember { mutableStateOf(PaymentMethod.UPI) }
     var transactionToDelete by remember { mutableStateOf<TransactionEntity?>(null) }
@@ -89,139 +94,153 @@ fun DashboardScreen(
         modifier = modifier
             .fillMaxSize()
             .testTag("dashboard_screen"),
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 1. Total Net Worth Summary Card
+        // 1. My Wealth Card (Click takes you to Wealth Details Page)
         item {
-            ElevatedCard(
+            Card(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable { onNavigateToWealth() }
                     .testTag("total_networth_card"),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.elevatedCardColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
-                )
+                shape = RoundedCornerShape(26.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(18.dp)
+                        .padding(20.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "TOTAL BALANCE",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.sp,
-                            color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f)
-                        )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = "MY WEALTH",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.2.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
 
-                        if (balances.otherPeopleTotalHeld > 0) {
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
-                                modifier = Modifier.clickable { onNavigateToCustody() }
+                            IconButton(
+                                onClick = { isBalanceHidden = !isBalanceHidden },
+                                modifier = Modifier.size(24.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.AccountBalance,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(14.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(
-                                        text = "Bank: ₹${String.format(Locale.getDefault(), "%,.0f", balances.totalBankUpiBalance)}",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Icon(
-                                        imageVector = Icons.Default.ArrowForwardIos,
-                                        contentDescription = null,
-                                        modifier = Modifier.size(10.dp),
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
+                                Icon(
+                                    imageVector = if (isBalanceHidden) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                    contentDescription = "Toggle Balance Privacy",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = AppleBlue.copy(alpha = 0.12f)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "3 Accounts",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = AppleBlue
+                                )
+                                Icon(
+                                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(10.dp),
+                                    tint = AppleBlue
+                                )
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(4.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = String.format(Locale.getDefault(), "₹%,.2f", balances.myTotalNetWorth),
-                        style = MaterialTheme.typography.headlineLarge,
+                        text = if (isBalanceHidden) "₹ ••••••••"
+                        else String.format(Locale.getDefault(), "₹%,.2f", balances.myTotalNetWorth),
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.testTag("net_worth_value")
                     )
+
+                    Spacer(modifier = Modifier.height(14.dp))
+
+                    // Multi-Segment Allocation Bar
+                    val totalPositive = maxOf(
+                        1.0,
+                        maxOf(0.0, balances.myUpiBalance) + maxOf(0.0, balances.walletBalance) + maxOf(0.0, balances.treasureSafeBalance)
+                    )
+                    val upiWeight = (maxOf(0.0, balances.myUpiBalance) / totalPositive).toFloat().coerceAtLeast(0.05f)
+                    val walletWeight = (maxOf(0.0, balances.walletBalance) / totalPositive).toFloat().coerceAtLeast(0.05f)
+                    val safeWeight = (maxOf(0.0, balances.treasureSafeBalance) / totalPositive).toFloat().coerceAtLeast(0.05f)
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .weight(upiWeight)
+                                .fillMaxHeight()
+                                .background(AppleBlue)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Box(
+                            modifier = Modifier
+                                .weight(walletWeight)
+                                .fillMaxHeight()
+                                .background(AppleGreen)
+                        )
+                        Spacer(modifier = Modifier.width(2.dp))
+                        Box(
+                            modifier = Modifier
+                                .weight(safeWeight)
+                                .fillMaxHeight()
+                                .background(AppleOrange)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    // Legend labels
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        AllocationLegendItem(label = "UPI", color = AppleBlue, amount = balances.myUpiBalance, isHidden = isBalanceHidden)
+                        AllocationLegendItem(label = "Wallet", color = AppleGreen, amount = balances.walletBalance, isHidden = isBalanceHidden)
+                        AllocationLegendItem(label = "Safe", color = AppleOrange, amount = balances.treasureSafeBalance, isHidden = isBalanceHidden)
+                    }
                 }
             }
         }
 
-        // 2. The 3 Saving & Spending Buckets: UPI, Wallet, Treasure Safe
+        // 2. Transactions History Header & Filters
         item {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                // Bucket 1: UPI
-                BucketCard(
-                    title = "UPI (Bank)",
-                    balance = balances.myUpiBalance,
-                    icon = Icons.Default.CreditCard,
-                    accentColor = Color(0xFF3B82F6),
-                    modifier = Modifier.weight(1f),
-                    onQuickAdd = {
-                        dialogInitialMethod = PaymentMethod.UPI
-                        dialogInitialType = TransactionType.EXPENSE
-                        showAddDialog = true
-                    }
-                )
-
-                // Bucket 2: Wallet
-                BucketCard(
-                    title = "Wallet",
-                    balance = balances.walletBalance,
-                    icon = Icons.Default.Wallet,
-                    accentColor = Color(0xFF10B981),
-                    modifier = Modifier.weight(1f),
-                    onQuickAdd = {
-                        dialogInitialMethod = PaymentMethod.WALLET
-                        dialogInitialType = TransactionType.EXPENSE
-                        showAddDialog = true
-                    }
-                )
-
-                // Bucket 3: Treasure Safe
-                BucketCard(
-                    title = "Safe",
-                    balance = balances.treasureSafeBalance,
-                    icon = Icons.Default.Lock,
-                    accentColor = Color(0xFFF59E0B),
-                    modifier = Modifier.weight(1f),
-                    onQuickAdd = {
-                        dialogInitialMethod = PaymentMethod.SAFE
-                        dialogInitialType = TransactionType.EXPENSE
-                        showAddDialog = true
-                    }
-                )
-            }
-        }
-
-        // 3. Transactions History Header & Filter Button
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -230,26 +249,28 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "History",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        text = "RECENT ACTIVITY",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.2.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "(${uiState.filteredTransactions.size})",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
                     )
                 }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    // If filter is active, show active badge summary pill
+                    // Active filter chip
                     if (uiState.historyFilter.isFilterActive) {
                         Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = MaterialTheme.colorScheme.primaryContainer,
+                            shape = RoundedCornerShape(14.dp),
+                            color = AppleBlue.copy(alpha = 0.15f),
                             modifier = Modifier.clickable { showFilterDialog = true }
                         ) {
                             Row(
@@ -261,45 +282,49 @@ fun DashboardScreen(
                                     text = uiState.historyFilter.filterSummaryLabel,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onPrimaryContainer
+                                    color = AppleBlue
                                 )
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Clear filter",
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    tint = AppleBlue,
                                     modifier = Modifier
-                                        .size(14.dp)
+                                        .size(12.dp)
                                         .clickable { viewModel.resetHistoryFilter() }
                                 )
                             }
                         }
                     }
 
-                    // Filter Icon Button
+                    // Filter Button
                     IconButton(
                         onClick = { showFilterDialog = true },
-                        modifier = Modifier.testTag("btn_filter_history")
+                        modifier = Modifier
+                            .size(32.dp)
+                            .testTag("btn_filter_history")
                     ) {
                         if (uiState.historyFilter.isFilterActive) {
                             BadgedBox(
                                 badge = {
                                     Badge(
-                                        containerColor = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(8.dp)
+                                        containerColor = AppleBlue,
+                                        modifier = Modifier.size(6.dp)
                                     )
                                 }
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Tune,
                                     contentDescription = "Filter History",
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = AppleBlue,
+                                    modifier = Modifier.size(18.dp)
                                 )
                             }
                         } else {
                             Icon(
                                 imageVector = Icons.Default.Tune,
                                 contentDescription = "Filter History",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -307,41 +332,59 @@ fun DashboardScreen(
             }
         }
 
-        // 4. Transaction Items
+        // 3. Grouped Transaction Items Container
         if (uiState.filteredTransactions.isEmpty()) {
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f))
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(24.dp),
+                            .padding(28.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = if (uiState.historyFilter.isFilterActive) "No transactions match your filter" else "No transactions yet",
+                            text = if (uiState.historyFilter.isFilterActive) "No transactions match your filter" else "No transactions recorded yet",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (uiState.historyFilter.isFilterActive) {
                             TextButton(onClick = { viewModel.resetHistoryFilter() }) {
-                                Text("Reset Filters")
+                                Text("Reset Filters", color = AppleBlue)
                             }
                         }
                     }
                 }
             }
         } else {
-            items(uiState.filteredTransactions, key = { it.id }) { tx ->
-                TransactionRow(
-                    transaction = tx,
-                    dateFormat = dateFormat,
-                    onDelete = { transactionToDelete = tx }
-                )
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+                ) {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        uiState.filteredTransactions.forEachIndexed { index, tx ->
+                            AppleTransactionRow(
+                                transaction = tx,
+                                dateFormat = dateFormat,
+                                isHidden = isBalanceHidden,
+                                onDelete = { transactionToDelete = tx }
+                            )
+                            if (index < uiState.filteredTransactions.size - 1) {
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(start = 58.dp, end = 16.dp),
+                                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                                    thickness = 0.5.dp
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -366,7 +409,7 @@ fun DashboardScreen(
         )
     }
 
-    // History Filter Dialog (Date & Method)
+    // History Filter Dialog
     if (showFilterDialog) {
         HistoryFilterDialog(
             initialFilter = uiState.historyFilter,
@@ -386,24 +429,25 @@ fun DashboardScreen(
     transactionToDelete?.let { tx ->
         AlertDialog(
             onDismissRequest = { transactionToDelete = null },
-            title = { Text("Delete Entry") },
-            text = { Text("Delete '${tx.reason}' for ₹${tx.amount}?") },
+            shape = RoundedCornerShape(20.dp),
+            title = { Text("Delete Entry", fontWeight = FontWeight.Bold) },
+            text = { Text("Are you sure you want to delete '${tx.reason}' for ₹${tx.amount}?") },
             confirmButton = {
                 Button(
                     onClick = {
                         viewModel.deleteTransaction(tx)
                         transactionToDelete = null
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
-                    shape = RoundedCornerShape(10.dp)
+                    colors = ButtonDefaults.buttonColors(containerColor = AppleRed),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text("Delete")
+                    Text("Delete", fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { transactionToDelete = null },
-                    shape = RoundedCornerShape(10.dp)
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("Cancel")
                 }
@@ -413,172 +457,142 @@ fun DashboardScreen(
 }
 
 @Composable
-fun BucketCard(
-    title: String,
-    balance: Double,
-    icon: ImageVector,
-    accentColor: Color,
-    modifier: Modifier = Modifier,
-    onQuickAdd: () -> Unit
+fun AllocationLegendItem(
+    label: String,
+    color: Color,
+    amount: Double,
+    isHidden: Boolean
 ) {
-    Card(
-        modifier = modifier
-            .clickable { onQuickAdd() }
-            .testTag("bucket_card_${title.lowercase()}"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(34.dp)
-                    .clip(CircleShape)
-                    .background(accentColor.copy(alpha = 0.15f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(18.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(2.dp))
-
-            Text(
-                text = String.format(Locale.getDefault(), "₹%,.0f", balance),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.ExtraBold,
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+                .size(7.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = if (isHidden) "₹••••" else "₹${String.format(Locale.getDefault(), "%,.0f", amount)}",
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }
 
 @Composable
-fun TransactionRow(
+fun AppleTransactionRow(
     transaction: TransactionEntity,
     dateFormat: SimpleDateFormat,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier
+    isHidden: Boolean,
+    onDelete: () -> Unit
 ) {
     val isExpense = transaction.type == TransactionType.EXPENSE.id
     val method = transaction.paymentMethod
     val methodColor = when (method) {
-        PaymentMethod.UPI -> Color(0xFF3B82F6)
-        PaymentMethod.WALLET -> Color(0xFF10B981)
-        PaymentMethod.SAFE -> Color(0xFFF59E0B)
+        PaymentMethod.UPI -> AppleBlue
+        PaymentMethod.WALLET -> AppleGreen
+        PaymentMethod.SAFE -> AppleOrange
     }
 
-    Card(
-        modifier = modifier
+    Row(
+        modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp)
             .testTag("tx_row_${transaction.id}"),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow)
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            modifier = Modifier.weight(1f)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.weight(1f)
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(
+                        if (isExpense) AppleRed.copy(alpha = 0.12f)
+                        else AppleGreen.copy(alpha = 0.12f)
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(36.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (isExpense) MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
-                            else Color(0xFF16A34A).copy(alpha = 0.12f)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = if (isExpense) Icons.Default.TrendingDown else Icons.Default.TrendingUp,
-                        contentDescription = null,
-                        tint = if (isExpense) MaterialTheme.colorScheme.error else Color(0xFF16A34A),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(10.dp))
-
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = transaction.reason,
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = methodColor.copy(alpha = 0.15f)
-                        ) {
-                            Text(
-                                text = method.shortName,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = methodColor,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
-                            )
-                        }
-                        Text(
-                            text = dateFormat.format(Date(transaction.dateMillis)),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.outline
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = if (isExpense) Icons.Default.TrendingDown else Icons.Default.TrendingUp,
+                    contentDescription = null,
+                    tint = if (isExpense) AppleRed else AppleGreen,
+                    modifier = Modifier.size(18.dp)
+                )
             }
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "${if (isExpense) "-" else "+"}₹${String.format(Locale.getDefault(), "%,.2f", transaction.amount)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = if (isExpense) MaterialTheme.colorScheme.error else Color(0xFF16A34A)
-                )
+            Spacer(modifier = Modifier.width(12.dp))
 
-                IconButton(
-                    onClick = onDelete,
-                    modifier = Modifier
-                        .size(32.dp)
-                        .padding(start = 4.dp)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = transaction.reason,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Delete,
-                        contentDescription = "Delete",
-                        tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                        modifier = Modifier.size(16.dp)
+                    Surface(
+                        shape = RoundedCornerShape(5.dp),
+                        color = methodColor.copy(alpha = 0.15f)
+                    ) {
+                        Text(
+                            text = method.shortName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = methodColor,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
+                        )
+                    }
+                    Text(
+                        text = dateFormat.format(Date(transaction.dateMillis)),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = if (isHidden) "₹••••"
+                else "${if (isExpense) "-" else "+"}₹${String.format(Locale.getDefault(), "%,.2f", transaction.amount)}",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isExpense) AppleRed else AppleGreen
+            )
+
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier
+                    .size(28.dp)
+                    .padding(start = 2.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete",
+                    tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                    modifier = Modifier.size(15.dp)
+                )
             }
         }
     }

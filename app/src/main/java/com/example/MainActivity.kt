@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Analytics
@@ -51,6 +52,7 @@ import com.example.ui.components.BackupDialog
 import com.example.ui.screens.AnalysisScreen
 import com.example.ui.screens.CustodyScreen
 import com.example.ui.screens.DashboardScreen
+import com.example.ui.screens.WealthDetailsScreen
 import com.example.ui.theme.MyApplicationTheme
 import com.example.ui.viewmodel.FinanceViewModel
 
@@ -66,6 +68,7 @@ class MainActivity : ComponentActivity() {
             MyApplicationTheme {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 var selectedTabIndex by remember { mutableIntStateOf(0) }
+                var showWealthDetailsScreen by remember { mutableStateOf(false) }
                 var showBackupDialog by remember { mutableStateOf(false) }
                 var showAddTransactionDialog by remember { mutableStateOf(false) }
 
@@ -75,14 +78,31 @@ class MainActivity : ComponentActivity() {
                         CenterAlignedTopAppBar(
                             title = {
                                 Text(
-                                    text = when (selectedTabIndex) {
-                                        0 -> "Finance Tracker"
-                                        1 -> "Spending Insights"
-                                        else -> "People's UPI"
+                                    text = if (showWealthDetailsScreen) {
+                                        "My Wealth"
+                                    } else {
+                                        when (selectedTabIndex) {
+                                            0 -> "Finance Tracker"
+                                            1 -> "Spending Insights"
+                                            else -> "People's UPI"
+                                        }
                                     },
                                     fontWeight = FontWeight.Bold,
                                     style = MaterialTheme.typography.titleLarge
                                 )
+                            },
+                            navigationIcon = {
+                                if (showWealthDetailsScreen) {
+                                    IconButton(
+                                        onClick = { showWealthDetailsScreen = false },
+                                        modifier = Modifier.testTag("btn_top_back_wealth")
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Back"
+                                        )
+                                    }
+                                }
                             },
                             actions = {
                                 IconButton(
@@ -126,11 +146,14 @@ class MainActivity : ComponentActivity() {
                         ) {
                             // Tab 1: Tracker
                             NavigationBarItem(
-                                selected = selectedTabIndex == 0,
-                                onClick = { selectedTabIndex = 0 },
+                                selected = selectedTabIndex == 0 && !showWealthDetailsScreen,
+                                onClick = {
+                                    selectedTabIndex = 0
+                                    showWealthDetailsScreen = false
+                                },
                                 icon = {
                                     Icon(
-                                        imageVector = if (selectedTabIndex == 0) Icons.Default.AccountBalanceWallet else Icons.Outlined.AccountBalanceWallet,
+                                        imageVector = if (selectedTabIndex == 0 && !showWealthDetailsScreen) Icons.Default.AccountBalanceWallet else Icons.Outlined.AccountBalanceWallet,
                                         contentDescription = "Tracker"
                                     )
                                 },
@@ -141,7 +164,10 @@ class MainActivity : ComponentActivity() {
                             // Tab 2: Analysis
                             NavigationBarItem(
                                 selected = selectedTabIndex == 1,
-                                onClick = { selectedTabIndex = 1 },
+                                onClick = {
+                                    selectedTabIndex = 1
+                                    showWealthDetailsScreen = false
+                                },
                                 icon = {
                                     Icon(
                                         imageVector = if (selectedTabIndex == 1) Icons.Default.Analytics else Icons.Outlined.Analytics,
@@ -155,7 +181,10 @@ class MainActivity : ComponentActivity() {
                             // Tab 3: People's UPI
                             NavigationBarItem(
                                 selected = selectedTabIndex == 2,
-                                onClick = { selectedTabIndex = 2 },
+                                onClick = {
+                                    selectedTabIndex = 2
+                                    showWealthDetailsScreen = false
+                                },
                                 icon = {
                                     if (uiState.balances.otherPeopleTotalHeld > 0) {
                                         BadgedBox(
@@ -188,20 +217,33 @@ class MainActivity : ComponentActivity() {
                             .fillMaxSize()
                             .padding(innerPadding)
                     ) {
-                        when (selectedTabIndex) {
-                            0 -> DashboardScreen(
+                        if (showWealthDetailsScreen) {
+                            WealthDetailsScreen(
                                 uiState = uiState,
                                 viewModel = viewModel,
-                                onNavigateToCustody = { selectedTabIndex = 2 }
+                                onBack = { showWealthDetailsScreen = false },
+                                onNavigateToCustody = {
+                                    showWealthDetailsScreen = false
+                                    selectedTabIndex = 2
+                                }
                             )
-                            1 -> AnalysisScreen(
-                                uiState = uiState,
-                                viewModel = viewModel
-                            )
-                            2 -> CustodyScreen(
-                                uiState = uiState,
-                                viewModel = viewModel
-                            )
+                        } else {
+                            when (selectedTabIndex) {
+                                0 -> DashboardScreen(
+                                    uiState = uiState,
+                                    viewModel = viewModel,
+                                    onNavigateToWealth = { showWealthDetailsScreen = true },
+                                    onNavigateToCustody = { selectedTabIndex = 2 }
+                                )
+                                1 -> AnalysisScreen(
+                                    uiState = uiState,
+                                    viewModel = viewModel
+                                )
+                                2 -> CustodyScreen(
+                                    uiState = uiState,
+                                    viewModel = viewModel
+                                )
+                            }
                         }
                     }
                 }
