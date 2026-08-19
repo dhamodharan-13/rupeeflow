@@ -234,7 +234,7 @@ fun CustodyScreen(
                 }
             }
         } else {
-            items(uiState.personSummaries, key = { it.person.id }) { summary ->
+            items(uiState.personSummaries, key = { "person_${it.person.id}_${it.person.name}" }) { summary ->
                 PersonLedgerCard(
                     summary = summary,
                     dateFormat = dateFormat,
@@ -266,7 +266,7 @@ fun CustodyScreen(
                 )
             }
 
-            items(uiState.custodyTransactions.take(15), key = { it.id }) { ctx ->
+            items(uiState.custodyTransactions.take(15), key = { "ctx_${it.id}_${it.dateMillis}" }) { ctx ->
                 val isReceived = ctx.type == CustodyType.RECEIVED_TO_SAVE.id
                 Card(
                     modifier = Modifier.fillMaxWidth(),

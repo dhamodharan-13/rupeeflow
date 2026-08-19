@@ -186,20 +186,15 @@ class MainActivity : ComponentActivity() {
                                     showWealthDetailsScreen = false
                                 },
                                 icon = {
-                                    if (uiState.balances.otherPeopleTotalHeld > 0) {
-                                        BadgedBox(
-                                            badge = {
+                                    BadgedBox(
+                                        badge = {
+                                            if (uiState.balances.otherPeopleTotalHeld > 0 && uiState.people.isNotEmpty()) {
                                                 Badge {
                                                     Text("${uiState.people.size}")
                                                 }
                                             }
-                                        ) {
-                                            Icon(
-                                                imageVector = if (selectedTabIndex == 2) Icons.Default.People else Icons.Outlined.People,
-                                                contentDescription = "People"
-                                            )
                                         }
-                                    } else {
+                                    ) {
                                         Icon(
                                             imageVector = if (selectedTabIndex == 2) Icons.Default.People else Icons.Outlined.People,
                                             contentDescription = "People"
